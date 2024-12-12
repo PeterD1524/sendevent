@@ -313,3 +313,37 @@ pub fn send_events_from_reader(reader: &mut impl BufRead, device: Option<&str>) 
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::TimeVal;
+    use std::time::Duration;
+
+    #[test]
+    fn time_val_to_duration() {
+        assert_eq!(
+            TimeVal { sec: 0, usec: 0 }.to_duration(),
+            Duration::new(0, 0)
+        );
+        assert_eq!(
+            super::TimeVal { sec: 1, usec: 1 }.to_duration(),
+            Duration::new(1, 1000)
+        );
+        assert_eq!(
+            super::TimeVal {
+                sec: i64::MAX,
+                usec: 0
+            }
+            .to_duration(),
+            Duration::new(i64::MAX.try_into().unwrap(), 0)
+        );
+        assert_eq!(
+            super::TimeVal {
+                sec: i64::MAX,
+                usec: 4294967
+            }
+            .to_duration(),
+            Duration::new(i64::MAX.try_into().unwrap(), 4294967000)
+        );
+    }
+}
