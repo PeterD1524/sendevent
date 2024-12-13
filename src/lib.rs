@@ -46,6 +46,7 @@ impl InputEvent {
 }
 
 fn parse_event(line: &str, options: &Options) -> Result<(Option<String>, InputEvent), Error> {
+    println!("{:?}", line);
     let line_saved = line;
     let (line, sec, usec) = if options.get_time {
         let bytes = line.as_bytes();
@@ -316,7 +317,7 @@ pub fn send_events_from_reader(reader: &mut impl BufRead, device: Option<&str>) 
 
 #[cfg(test)]
 mod tests {
-    use crate::TimeVal;
+    use crate::{linux::input_event_codes, parse_event, Error, InputEvent, Options, TimeVal};
     use std::time::Duration;
 
     #[test]
@@ -344,6 +345,260 @@ mod tests {
             }
             .to_duration(),
             Duration::new(i64::MAX.try_into().unwrap(), 4294967000)
+        );
+    }
+
+    #[test]
+    fn test_parse_event() {
+        macro_rules! run {
+            ($pattern:pat, $line:expr, $options:expr) => {
+                run!($pattern, $line, $options, {});
+            };
+            ($pattern:pat, $line:expr, $options:expr, $statement:expr) => {
+                if let $pattern = parse_event($line, &$options) {
+                    $statement;
+                } else {
+                    assert!(false);
+                }
+            };
+        }
+        run!(
+            Err(Error::Format(..)),
+            "",
+            Options {
+                get_time: false,
+                print_device: false,
+            }
+        );
+        run!(
+            Err(Error::Format(..)),
+            "",
+            Options {
+                get_time: false,
+                print_device: true,
+            }
+        );
+        run!(
+            Err(Error::Format(..)),
+            "",
+            Options {
+                get_time: true,
+                print_device: false,
+            }
+        );
+        run!(
+            Err(Error::Format(..)),
+            "",
+            Options {
+                get_time: true,
+                print_device: true,
+            }
+        );
+        run!(
+            Err(Error::Format(..)),
+            "[",
+            Options {
+                get_time: true,
+                print_device: false,
+            }
+        );
+        run!(
+            Err(Error::Format(..)),
+            "[] ",
+            Options {
+                get_time: true,
+                print_device: false,
+            }
+        );
+        run!(
+            Err(Error::ParseInt(..)),
+            "[.] ",
+            Options {
+                get_time: true,
+                print_device: false,
+            }
+        );
+        run!(
+            Err(Error::ParseInt(..)),
+            "[0.] ",
+            Options {
+                get_time: true,
+                print_device: false,
+            }
+        );
+        run!(
+            Err(Error::Format(..)),
+            "[0.0] ",
+            Options {
+                get_time: true,
+                print_device: false,
+            }
+        );
+        run!(
+            Err(Error::Format(..)),
+            ": ",
+            Options {
+                get_time: false,
+                print_device: true,
+            }
+        );
+        run!(
+            Err(Error::ParseInt(..)),
+            "-1",
+            Options {
+                get_time: false,
+                print_device: false,
+            }
+        );
+        run!(
+            Err(Error::Format(..)),
+            "0",
+            Options {
+                get_time: false,
+                print_device: false,
+            }
+        );
+        run!(
+            Err(Error::ParseInt(..)),
+            "0 -1",
+            Options {
+                get_time: false,
+                print_device: false,
+            }
+        );
+        run!(
+            Err(Error::ParseInt(..)),
+            "0 -1",
+            Options {
+                get_time: false,
+                print_device: false,
+            }
+        );
+        run!(
+            Err(Error::Format(..)),
+            "0 0",
+            Options {
+                get_time: false,
+                print_device: false,
+            }
+        );
+        run!(
+            Err(Error::ParseInt(..)),
+            "0 0 -1",
+            Options {
+                get_time: false,
+                print_device: false,
+            }
+        );
+        run!(
+            Ok((
+                None,
+                InputEvent {
+                    time: TimeVal { sec: 0, usec: 0 },
+                    r#type: 0,
+                    code: 0,
+                    value: 0
+                }
+            )),
+            "0 0 0",
+            Options {
+                get_time: false,
+                print_device: false,
+            }
+        );
+        run!(
+            Ok((
+                None,
+                InputEvent {
+                    time: TimeVal { sec: 1, usec: 1 },
+                    r#type: 1,
+                    code: 1,
+                    value: 1
+                }
+            )),
+            "[1.1] 1 1 1",
+            Options {
+                get_time: true,
+                print_device: false,
+            }
+        );
+        run!(
+            Ok((
+                Some(device),
+                InputEvent {
+                    time: TimeVal { sec: 0, usec: 0 },
+                    r#type: 0,
+                    code: 0,
+                    value: 0
+                }
+            )),
+            "[0.0] : 0 0 0",
+            Options {
+                get_time: true,
+                print_device: true,
+            },
+            assert_eq!(device, "")
+        );
+        run!(
+            Ok((
+                Some(device),
+                InputEvent {
+                    time: TimeVal { sec: 0, usec: 0 },
+                    r#type: 0,
+                    code: 0,
+                    value: 0
+                }
+            )),
+            "[0.0] /dev/input/event0: 0 0 0",
+            Options {
+                get_time: true,
+                print_device: true,
+            },
+            assert_eq!(device, "/dev/input/event0")
+        );
+        run!(
+            Ok((
+                Some(device),
+                InputEvent {
+                    time: TimeVal { sec: 0, usec: 0 },
+                    r#type,
+                    code,
+                    value
+                }
+            )),
+            "[0.0] /dev/input/event0: EV_SYN SYN_REPORT 0",
+            Options {
+                get_time: true,
+                print_device: true,
+            },
+            {
+                assert_eq!(device, "/dev/input/event0");
+                assert_eq!(r#type, input_event_codes::EV_SYN.try_into().unwrap());
+                assert_eq!(code, input_event_codes::SYN_REPORT.try_into().unwrap());
+                assert_eq!(value, 0);
+            }
+        );
+        run!(
+            Ok((
+                Some(device),
+                InputEvent {
+                    time: TimeVal { sec: 0, usec: 0 },
+                    r#type,
+                    code,
+                    value
+                }
+            )),
+            "[0.0] /dev/input/event0: EV_KEY BTN_TOUCH DOWN",
+            Options {
+                get_time: true,
+                print_device: true,
+            },
+            {
+                assert_eq!(device, "/dev/input/event0");
+                assert_eq!(r#type, input_event_codes::EV_KEY.try_into().unwrap());
+                assert_eq!(code, input_event_codes::BTN_TOUCH.try_into().unwrap());
+                assert_eq!(value, 1);
+            }
         );
     }
 }
