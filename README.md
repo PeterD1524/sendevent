@@ -9,13 +9,13 @@ https://cs.android.com/android/platform/superproject/+/master:system/core/toolbo
 ## Usage
 
 ```
-sendevent 
+sendevent
 
 USAGE:
     sendevent [OPTIONS]
 
 OPTIONS:
-        --device <DEVICE>    
+        --device <DEVICE>
     -h, --help               Print help information
         --path <PATH>
 ```
@@ -23,8 +23,6 @@ OPTIONS:
 `--device <DEVICE>` is required if the device field is omitted from the input.
 
 If `--path <PATH>` is omitted, it will read events from stdin.
-
-
 
 Capture events and save them to `/data/local/tmp/output`:
 
@@ -37,8 +35,6 @@ The verbose mask must be cleared (via `-q` or `-v0`) or set to 1 (via `-v1`), ot
 Do not use the flag `-d` as well.
 
 Do not use the flag `-n` because there will be no newlines between events in the output.
-
-
 
 Older versions of getevent does not disable buffering on stdout so the above command may not work well. Use `adb exec-out` to fix the problem.
 
@@ -53,8 +49,6 @@ Push the output file to the Android device:
 ```
 adb push output /data/local/tmp/output
 ```
-
-
 
 After capturing the events and building the executable, push the executable to the Android device:
 
@@ -136,7 +130,7 @@ From https://docs.kernel.org/input/event-codes.html:
 
 If you look at the output of getevent, you will see that the events between two `SYN_REPORT` events share the same timestamp.
 
-Therefore, there is no need to delay writing events other than `SYN_REPORT` events. The program will immediately write all events except events with event type `EV_SYN` and event code `SYN_REPORT`. 
+Therefore, there is no need to delay writing events other than `SYN_REPORT` events. The program will immediately write all events except events with event type `EV_SYN` and event code `SYN_REPORT`.
 
 ## Note
 
