@@ -6,6 +6,23 @@ getevent source code:
 
 https://cs.android.com/android/platform/superproject/+/master:system/core/toolbox/getevent.c
 
+Newer versions of Android removed write access to /dev/input devices for adb shell.
+
+[android/platform/superproject/main/+/main:system/sepolicy/private/shell.te](https://cs.android.com/android/platform/superproject/main/+/main:system/sepolicy/private/shell.te;l=533-540;drc=61544252beab26655279ba80ec88e6b0d8fdda1c):
+
+```
+# b/30861057: Shell access to existing input devices is an abuse
+# vector. The shell user can inject events that look like they
+# originate from the touchscreen etc.
+# Everyone should have already moved to UiAutomation#injectInputEvent
+# if they are running instrumentation tests (i.e. CTS), Monkey for
+# their stress tests, and the input command (adb shell input ...) for
+# injecting swipes and things.
+neverallow shell input_device:chr_file no_w_file_perms;
+```
+
+Related commit: https://cs.android.com/android/_/android/platform/system/sepolicy/+/51156264b4b9ff3bd5a766d17f005eb5d6b4d029
+
 ## Usage
 
 ```
