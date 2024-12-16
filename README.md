@@ -43,8 +43,10 @@ If `--path <PATH>` is omitted, it will read events from stdin.
 
 Capture events and save them to `/data/local/tmp/output`:
 
+In adb shell:
+
 ```
-adb shell getevent -l -t -q > /data/local/tmp/output
+getevent -l -t -q > /data/local/tmp/output
 ```
 
 The verbose mask must be cleared (via `-q` or `-v0`) or set to 1 (via `-v1`), otherwise additional device information will be printed.
