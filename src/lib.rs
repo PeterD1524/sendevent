@@ -46,7 +46,6 @@ impl InputEvent {
 }
 
 fn parse_event(line: &str, options: &Options) -> Result<(Option<String>, InputEvent), Error> {
-    println!("{:?}", line);
     let line_saved = line;
     let (line, sec, usec) = if options.get_time {
         let bytes = line.as_bytes();
@@ -266,7 +265,6 @@ pub fn send_events_from_reader(reader: &mut impl BufRead, device: Option<&str>) 
             ),
             Err(error) => panic!("{:?}", error),
         };
-        // println!("{:?}", (&device, &event));
         let event = InputEvent {
             time: TimeVal { sec: 0, usec: 0 },
             ..event
@@ -304,10 +302,6 @@ pub fn send_events_from_reader(reader: &mut impl BufRead, device: Option<&str>) 
                 let eta = current_event_time - base_event_time;
                 let now = base_system_time.elapsed().unwrap();
                 let delay = eta.saturating_sub(now);
-                // println!(
-                //     "event.time {:?} now {:?} eta {:?} delay {:?}",
-                //     event.time, now, eta, delay
-                // );
                 thread::sleep(delay);
                 write_event(device, &event).unwrap();
             }
