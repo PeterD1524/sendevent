@@ -317,7 +317,9 @@ pub fn send_events_from_reader(reader: &mut impl BufRead, device: Option<&str>) 
 
 #[cfg(test)]
 mod tests {
-    use crate::{linux::input_event_codes, parse_event, Error, InputEvent, Options, TimeVal};
+    use crate::{
+        linux::input_event_codes, parse_event, write_event, Error, InputEvent, Options, TimeVal,
+    };
     use std::time::Duration;
 
     #[test]
@@ -600,5 +602,40 @@ mod tests {
                 assert_eq!(value, 1);
             }
         );
+    }
+
+    #[test]
+    fn test_write_event() {
+        macro_rules! run {
+            ($event:expr) => {
+                let mut device = vec![];
+                if let Ok(()) = write_event(&mut device, &$event) {
+                    assert_eq!(device, $event.to_ne_bytes());
+                } else {
+                    assert!(false);
+                }
+            };
+        }
+        run!(InputEvent {
+            time: TimeVal { sec: 0, usec: 0 },
+            r#type: 0,
+            code: 0,
+            value: 0,
+        });
+        run!(InputEvent {
+            time: TimeVal {
+                sec: i64::MAX,
+                usec: i64::MAX
+            },
+            r#type: u16::MAX,
+            code: u16::MAX,
+            value: i32::MAX,
+        });
+        run!(InputEvent {
+            time: TimeVal { sec: 1, usec: 2 },
+            r#type: 3,
+            code: 4,
+            value: 5,
+        });
     }
 }
